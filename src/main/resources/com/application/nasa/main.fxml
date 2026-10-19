@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.media.MediaView?>
+
+<?import org.controlsfx.control.cell.MediaImageCell?>
+<?import com.application.nasa.VideoPlayer?>
+<VBox spacing="24.0" styleClass="app" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.application.nasa.APIController">
+    <padding>
+        <Insets bottom="32.0" left="32.0" right="32.0" top="32.0"/>
+    </padding>
+
+    <HBox spacing="10.0">
+        <VBox spacing="6.0">
+            <Label text="Astronomy Picture of the Day" styleClass="title" wrapText="true"/>
+            <Label text="Explore the universe through NASA’s daily images." styleClass="subtitle" wrapText="true"/>
+        </VBox>
+
+        <Button fx:id="BUNDLE" visible="false" text="Download All Images" onAction="#bundleMedia"/>
+
+    </HBox>
+
+    <StackPane fx:id="imageFrame" styleClass="image-frame" minWidth="0.0" minHeight="0.0" VBox.vgrow="ALWAYS">
+        <ImageView fx:id="APOD_VIEWER" preserveRatio="true" fitWidth="${imageFrame.width}" fitHeight="${imageFrame.height}"/>
+        <VideoPlayer fx:id="VIDEO_PLAYER"  fitWidth="${imageFrame.width}" fitHeight="${imageFrame.height}"/>
+    </StackPane>
+
+    <HBox alignment="CENTER" spacing="10.0">
+        <Button fx:id="LOAD_APOD" text="Get APOD" onAction="#getAPOD" managed="${LOAD_APOD.visible}"/>
+        <ComboBox fx:id="IMAGE_SELECTOR" promptText="Select image" visible="false" managed="${IMAGE_SELECTOR.visible}" prefWidth="220.0"/>
+        <Button fx:id="SAVE_IMAGE" text="Download Image" visible="false" prefWidth="220" onAction="#saveMedia"/>
+    </HBox>
+    <Label fx:id="SAVE_STATUS" visible="false" styleClass="label"/>
+</VBox>
