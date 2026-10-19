@@ -10,6 +10,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.web.WebView;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import javafx.embed.swing.SwingFXUtils;
@@ -21,13 +22,16 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static com.application.nasa.MediaHandling.CACHE_DIR;
+import static com.application.nasa.MediaHandling.extractSrc;
 
 public class APIController {
 
@@ -35,7 +39,7 @@ public class APIController {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private Apod ACTIVE_APOD;
-    private ArrayList<Apod> images;
+    private ArrayList<Apod> media;
 
     @FXML
     private VideoPlayer VIDEO_PLAYER;
@@ -59,6 +63,9 @@ public class APIController {
     private Button BUNDLE;
 
     @FXML
+    private WebView WEBVIEW;
+
+    @FXML
     protected void bundleMedia() {
         LocalDate dateObj = LocalDate.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
@@ -73,12 +80,12 @@ public class APIController {
             System.out.println("Error creating directory");
         }
 
-        IO.println("Saving images to " + path);
+        System.out.println("Saving images to " + path);
 
-        for (Apod apod : images) {
+        for (Apod apod : media) {
             saveMedia(path, apod);
         }
-        IO.println("Done");
+        System.out.println("Done");
     }
     @FXML
     protected void saveMedia() {
@@ -86,7 +93,7 @@ public class APIController {
 
         if(ACTIVE_APOD.hdurl().endsWith("mp4")) {
             MediaHandling.saveVideo(ACTIVE_APOD, path);
-            IO.println("Video saved");
+            System.out.println("Video saved");
         }else {
             saveMedia(path, ACTIVE_APOD);
         }
@@ -97,11 +104,13 @@ public class APIController {
 
             @Override
             protected Void call() {
-
+                boolean success = false;
                 if(apod.hdurl().endsWith("mp4")) {
+
                     MediaHandling.saveVideo(apod, path);
-                    return null;
+                    success = true;
                 }
+
                 Image img = new Image(apod.hdurl(), false);
                 String title = apod.title();
 
@@ -109,11 +118,12 @@ public class APIController {
                 File savedImage = new File(path + title + ".png" );
 
                 try{
-                    boolean success = ImageIO.write(bi, "png", savedImage);
+                    success = ImageIO.write(bi, "png", savedImage);
 
+                    boolean finalSuccess = success;
                     Platform.runLater(() -> {
                         SAVE_STATUS.setVisible(true);
-                        if (success) {
+                        if (finalSuccess) {
                             SAVE_STATUS.setText("Image saved to downloads folder");
                             SAVE_STATUS.getStyleClass().add("label-success");
                         }else {
@@ -158,10 +168,10 @@ public class APIController {
                         }
                     })
                     .thenAccept(list -> Platform.runLater(() -> {
-                        images = (ArrayList<Apod>) list;
-                        checkHDUrl(images);
+                        media = (ArrayList<Apod>) list;
+                        checkHDUrl(media);
                         var items = FXCollections.observableArrayList();
-                        for (int i = 0; i < images.size(); i++) {
+                        for (int i = 0; i < media.size(); i++) {
                             items.add(i);
                         }
                         LOAD_APOD.setVisible(false);
@@ -169,31 +179,43 @@ public class APIController {
                         IMAGE_SELECTOR.setVisible(true);
                         IMAGE_SELECTOR.setItems(items);
                         IMAGE_SELECTOR.getSelectionModel().selectedItemProperty().addListener((_, _, val) -> {
-                            boolean isVideo = false;
+                            boolean isVideo = false, isYoutubeVideo = false;
                             SAVE_STATUS.setVisible(false);
 
-                            Apod selected = images.get((Integer) val);
-                            IO.println(selected.hdurl());
-                            if(selected.hdurl().endsWith("mp4")) {
+                            Apod selected = media.get((Integer) val);
+                            System.out.println(selected.hdurl());
+                            if (MediaHandling.extractYoutubeLink(selected.basic_html()) != null) {
+                                isYoutubeVideo = true;
+                            }
+                            else if(selected.hdurl().endsWith("mp4")) {
                                 isVideo = true;
+                            }else {
+                                VIDEO_PLAYER.silence();
                             }
 
                             String[] hdurl = selected.hdurl().split("\\?");
 
-                            if (!isVideo) {
+                            if (isVideo) {
+                                //Is a video.
+                                SAVE_IMAGE.setText("Download Video");
+                                APOD_VIEWER.setVisible(false);
+                                VIDEO_PLAYER.setVisible(true);
+                                VIDEO_PLAYER.setVideoURL(hdurl[0]);
+                            } else if (isYoutubeVideo) {
+
+                                SAVE_IMAGE.setText("Download Video");
+                                APOD_VIEWER.setVisible(false);
+                                VIDEO_PLAYER.setVisible(true);
+                                VIDEO_PLAYER.setVideoURL(MediaHandling.loadYoutubeVideo(selected).toURI().toString());
+                            } else {
                                 SAVE_IMAGE.setText("Download Image");
+
                                 Image img = new Image(hdurl[0], true);
                                 SAVE_IMAGE.disableProperty().bind(img.progressProperty().lessThan(1).or(img.errorProperty()));
 
                                 APOD_VIEWER.setImage(img);
                                 APOD_VIEWER.setVisible(true);
                                 VIDEO_PLAYER.setVisible(false);
-                            } else {
-                                //Is a video.
-                                SAVE_IMAGE.setText("Download Video");
-                                APOD_VIEWER.setVisible(false);
-                                VIDEO_PLAYER.setVisible(true);
-                                VIDEO_PLAYER.setVideoURL(hdurl[0]);
                             }
                             ACTIVE_APOD = selected;
                         });
@@ -229,16 +251,5 @@ public class APIController {
                 apod.setHdurl(src);
             }
         }
-    }
-
-    /**
-     * Finds media url from the basic_html of an APOD.
-     * @param html
-     * @return
-     */
-    public static String extractSrc(String html) {
-        Pattern SRC_PATTERN = Pattern.compile("<source[^>]*\\ssrc\\s*=\\s*\"([^\"]+)\"", Pattern.CASE_INSENSITIVE);
-        Matcher m = SRC_PATTERN.matcher(html);
-        return m.find() ? m.group(1).substring(0) : null;
     }
 }

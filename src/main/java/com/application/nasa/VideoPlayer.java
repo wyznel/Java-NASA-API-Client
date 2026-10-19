@@ -30,16 +30,20 @@ public class VideoPlayer extends MediaView {
         }
 
         MediaPlayer player = getPlayer(new Media(videoURL));
-        player.setCycleCount(MediaPlayer.INDEFINITE);
         setMediaPlayer(player);
     }
 
+    public void silence() {
+        MediaPlayer player = getMediaPlayer();
+        if (player != null) {
+            player.dispose();
+        }
+    }
 
     private MediaPlayer getPlayer(Media media) {
         MediaPlayer mp = new MediaPlayer(media);
         mp.setAutoPlay(true);
         mp.setCycleCount(MediaPlayer.INDEFINITE);
-
         return mp;
     }
 
