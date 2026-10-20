@@ -42,7 +42,7 @@ public class MediaHandling {
             pb.directory(CACHE_DIR.toFile());
             Process p = pb.start();
             p.waitFor();
-
+            System.out.println("Downloaded video to: " + CACHE_DIR.resolve(cleanedTitle + ".mp4"));
             return CACHE_DIR.resolve(cleanedTitle + ".mp4").toFile();
         }catch (Exception e) {
             throw new RuntimeException(e);

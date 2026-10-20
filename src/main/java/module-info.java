@@ -9,7 +9,8 @@ module com.application.nasa {
     requires tools.jackson.databind;
     requires java.desktop;
     requires javafx.media;
-    requires javafx.web;
+    requires one.jpro.platform.mdfx;
+    requires flexmark.html2md.converter;
 
     opens com.application.nasa to javafx.fxml;
     exports com.application.nasa;

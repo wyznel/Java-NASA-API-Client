@@ -16,6 +16,12 @@
     -fx-text-fill: #ff0000;
 }
 
+
+.apod-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+}
+
 .title {
     -fx-font-size: 28px;
     -fx-font-weight: bold;
@@ -32,6 +38,56 @@
     -fx-border-radius: 8px;
     -fx-border-width: 1px;
     -fx-padding: 16px;
+}
+
+.explanation-scroll {
+    -fx-background-color: #251e3e;
+    -fx-background-insets: 0;
+    -fx-background-radius: 6px;
+    -fx-border-color: #451e3e;
+    -fx-border-radius: 6px;
+    -fx-border-width: 1px;
+    -fx-padding: 0;
+}
+
+.explanation-scroll > .viewport {
+    -fx-background-color: transparent;
+    -fx-background-radius: 6px;
+}
+
+.explanation-text {
+    -fx-padding: 8px 12px;
+    -mdfx-font-color: #f4f2f7;
+    -mdfx-link-color: #a8d8ff;
+}
+
+.explanation-text .markdown-normal-flow {
+    -fx-line-spacing: 2px;
+}
+
+.explanation-scroll .scroll-bar:vertical,
+.explanation-scroll .scroll-bar:vertical .track,
+.explanation-scroll .scroll-bar:vertical .increment-button,
+.explanation-scroll .scroll-bar:vertical .decrement-button {
+    -fx-background-color: transparent;
+}
+
+.explanation-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: #651e3e;
+    -fx-background-radius: 6px;
+}
+
+.explanation-scroll .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #851e3e;
+}
+
+.explanation-scroll .scroll-bar:vertical .increment-arrow,
+.explanation-scroll .scroll-bar:vertical .decrement-arrow {
+    -fx-background-color: #bcb9cc;
+}
+
+.explanation-scroll:focused {
+    -fx-border-color: #d7b4ce;
 }
 
 .button,
@@ -99,4 +155,17 @@
 .combo-box:focused {
     -fx-border-color: #d7b4ce;
     -fx-effect: dropshadow(gaussian, rgba(215, 180, 206, 0.3), 6, 0, 0, 0);
+}
+
+.markdown-text {
+    -fx-font-family: ARIAL;
+}
+.markdown-italic {
+    -fx-font-style: italic;
+}
+.markdown-bold {
+    -fx-font-weight: bold;
+}
+.markdown-strikethrough {
+    -fx-strikethrough: true;
 }

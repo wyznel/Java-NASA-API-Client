@@ -26,8 +26,10 @@ public class Main extends Application {
             }
         }
 
+
         FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("main.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 1000, 800);
+        fxmlLoader.<APIController>getController().setExplanationLinkOpener(getHostServices()::showDocument);
         scene.getStylesheets().add(Main.class.getResource("styles.css").toExternalForm());
         stage.setMinWidth(480);
         stage.setMinHeight(480);

@@ -10,7 +10,6 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.web.WebView;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import javafx.embed.swing.SwingFXUtils;
@@ -22,15 +21,13 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
-import static com.application.nasa.MediaHandling.CACHE_DIR;
 import static com.application.nasa.MediaHandling.extractSrc;
 
 public class APIController {
@@ -63,7 +60,14 @@ public class APIController {
     private Button BUNDLE;
 
     @FXML
-    private WebView WEBVIEW;
+    private Label TITLE;
+
+    @FXML
+    private ExplanationView EXPLANATION;
+
+    public void setExplanationLinkOpener(Consumer<String> linkOpener) {
+        EXPLANATION.setLinkOpener(linkOpener);
+    }
 
     @FXML
     protected void bundleMedia() {
@@ -184,6 +188,9 @@ public class APIController {
 
                             Apod selected = media.get((Integer) val);
                             System.out.println(selected.hdurl());
+                            TITLE.setText(selected.title());
+                            EXPLANATION.setExplanation(selected.explanation());
+
                             if (MediaHandling.extractYoutubeLink(selected.basic_html()) != null) {
                                 isYoutubeVideo = true;
                             }
