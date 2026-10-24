@@ -95,7 +95,7 @@ public class APIController {
     protected void saveMedia() {
         String path = System.getProperty("user.home") + "/Downloads/";
 
-        if(ACTIVE_APOD.hdurl().endsWith("mp4")) {
+        if(ACTIVE_APOD.hdurl().endsWith("mp4") || MediaHandling.extractYoutubeLink(ACTIVE_APOD.basic_html()) != null) {
             MediaHandling.saveVideo(ACTIVE_APOD, path);
             System.out.println("Video saved");
         }else {
@@ -109,8 +109,7 @@ public class APIController {
             @Override
             protected Void call() {
                 boolean success = false;
-                if(apod.hdurl().endsWith("mp4")) {
-
+                if(apod.hdurl().endsWith("mp4") || MediaHandling.extractYoutubeLink(apod.basic_html()) != null) {
                     MediaHandling.saveVideo(apod, path);
                     success = true;
                 }
@@ -213,7 +212,12 @@ public class APIController {
                                 SAVE_IMAGE.setText("Download Video");
                                 APOD_VIEWER.setVisible(false);
                                 VIDEO_PLAYER.setVisible(true);
-                                VIDEO_PLAYER.setVideoURL(MediaHandling.loadYoutubeVideo(selected).toURI().toString());
+
+                                Task<File> getVideo = MediaHandling.loadYoutubeVideo(selected);
+                                getVideo.setOnSucceeded(event -> {
+                                    VIDEO_PLAYER.setVideoURL(getVideo.getValue().toURI().toString());
+                                });
+                                new Thread(getVideo).start();
                             } else {
                                 SAVE_IMAGE.setText("Download Image");
 

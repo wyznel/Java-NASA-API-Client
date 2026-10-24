@@ -46,5 +46,4 @@ public class VideoPlayer extends MediaView {
         mp.setCycleCount(MediaPlayer.INDEFINITE);
         return mp;
     }
-
 }

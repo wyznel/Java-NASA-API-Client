@@ -1,12 +1,14 @@
 package com.application.nasa;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.application.nasa.apodModel.Apod;
+import javafx.concurrent.Task;
 
 public class MediaHandling {
 
@@ -14,6 +16,24 @@ public class MediaHandling {
 
     public static void saveVideo(apodModel.Apod apod, String path) {
         try{
+
+            if(extractYoutubeLink(apod.basic_html()) != null) {
+                //Save to downloads.
+                String cleanedTitle = sanitize(apod.title());
+
+                Task<File> getVideo = loadYoutubeVideo(apod);
+                getVideo.setOnSucceeded(event -> {
+                    File videoFile = getVideo.getValue();
+                    try {
+                        Files.move(videoFile.toPath(), Path.of(path, cleanedTitle + ".mp4"));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                new Thread(getVideo).start();
+                return;
+            }
+
             String url = apod.hdurl();
             String fileName = apod.title() + ".mp4";
             ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-i", url, "-c", "copy", fileName);
@@ -25,28 +45,58 @@ public class MediaHandling {
         }
     }
 
-    public static File loadYoutubeVideo(Apod apod) {
-        try {
-            String cleanedTitle = sanitize(apod.title());
-            Files.createDirectories(CACHE_DIR);
-            //Check if cached.
-            if(Files.exists(CACHE_DIR.resolve(cleanedTitle + ".mp4"))) {
-                System.out.println("Found cached video" + CACHE_DIR.resolve(cleanedTitle + ".mp4"));
-                return CACHE_DIR.resolve(cleanedTitle + ".mp4").toFile();
+    public static Task<File> loadYoutubeVideo(Apod apod) {
+        return new Task<>() {
+            @Override
+            protected File call() throws Exception {
+                String cleanedTitle = sanitize(apod.title());
+
+                Files.createDirectories(CACHE_DIR);
+
+                Path outputPath = CACHE_DIR
+                        .resolve(cleanedTitle + ".mp4")
+                        .toAbsolutePath();
+
+                // Return the cached file.
+                if (Files.isRegularFile(outputPath)) {
+                    System.out.println("Found cached video: " + outputPath);
+                    return outputPath.toFile();
+                }
+
+                String ytUrl = extractYoutubeLink(apod.basic_html());
+                System.out.println("YouTube URL: " + ytUrl);
+
+                ProcessBuilder pb = new ProcessBuilder(
+                        "yt-dlp",
+                        "--no-playlist",
+                        "--merge-output-format", "mp4",
+                        "--remux-video", "mp4",
+                        "-o", cleanedTitle + ".%(ext)s",
+                        ytUrl
+                );
+
+                pb.directory(CACHE_DIR.toFile());
+                pb.inheritIO();
+
+                Process process = pb.start();
+                int exitCode = process.waitFor();
+
+                if (exitCode != 0) {
+                    throw new IOException(
+                            "yt-dlp failed with exit code " + exitCode
+                    );
+                }
+
+                if (!Files.isRegularFile(outputPath)) {
+                    throw new IOException(
+                            "Download finished but file was not found: " + outputPath
+                    );
+                }
+
+                System.out.println("Downloaded video to: " + outputPath);
+                return outputPath.toFile();
             }
-
-            String ytUrl = extractYoutubeLink(apod.basic_html());
-            System.out.println("YouTube URL: " + ytUrl);
-
-            ProcessBuilder pb = new ProcessBuilder("yt-dlp", "--merge-output", "mp4", "--remux-video", "mp4", "-o", cleanedTitle, ytUrl);
-            pb.directory(CACHE_DIR.toFile());
-            Process p = pb.start();
-            p.waitFor();
-            System.out.println("Downloaded video to: " + CACHE_DIR.resolve(cleanedTitle + ".mp4"));
-            return CACHE_DIR.resolve(cleanedTitle + ".mp4").toFile();
-        }catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        };
     }
 
     public static String sanitize(String name) {
